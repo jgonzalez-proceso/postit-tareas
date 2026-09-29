@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Postit Tareas</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <nav class="tabs">
+      <button data-tab="notes" class="on">Post-its</button>
+      <button data-tab="tasks">Hoy</button>
+      <button data-tab="account">Cuenta</button>
+    </nav>
+
+    <section id="notes">
+      <button id="new-note" class="btn primary">Nuevo post-it en esta pestaña</button>
+      <p class="hint">Atajo: Alt+Shift+P · también en el menú del botón derecho.</p>
+      <ul id="notes-list" class="list"></ul>
+    </section>
+
+    <section id="tasks" hidden>
+      <form id="task-form" class="row">
+        <input id="task-input" placeholder="Nueva tarea para hoy" aria-label="Nueva tarea para hoy" />
+        <button class="btn primary">Añadir</button>
+      </form>
+      <ul id="tasks-list" class="list"></ul>
+    </section>
+
+    <section id="account" hidden></section>
+
+    <p id="error" class="error" role="alert" hidden></p>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

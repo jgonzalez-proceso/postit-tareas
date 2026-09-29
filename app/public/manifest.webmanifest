@@ -1,0 +1,16 @@
+{
+  "name": "Postit Tareas",
+  "short_name": "Tareas",
+  "description": "Tareas del día y de la semana, con post-its pegados a tus pestañas.",
+  "lang": "es",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fbf7ec",
+  "theme_color": "#fbf7ec",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
