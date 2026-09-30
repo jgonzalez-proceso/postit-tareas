@@ -40,6 +40,7 @@ export function LoginForm() {
         />
       </label>
       {message && <p className="form-msg">{message}</p>}
+      <p className="hint">La sesión queda guardada en este dispositivo; no hará falta volver a entrar.</p>
       <div className="login-actions">
         <button className="btn primary" disabled={busy}>
           Entrar

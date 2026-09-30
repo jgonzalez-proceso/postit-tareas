@@ -32,7 +32,11 @@ async function authRequest(grant, body) {
     body: JSON.stringify(body),
   })
   const data = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(data.error_description || data.msg || 'No se pudo iniciar sesión')
+  if (!res.ok) {
+    const error = new Error(data.error_description || data.msg || 'No se pudo iniciar sesión')
+    error.status = res.status
+    throw error
+  }
   const session = {
     access_token: data.access_token,
     refresh_token: data.refresh_token,
@@ -50,9 +54,14 @@ async function getSession() {
   if (session.expires_at - 60 > Date.now() / 1000) return session
   try {
     return await authRequest('refresh_token', { refresh_token: session.refresh_token })
-  } catch {
-    await chrome.storage.local.remove('session')
-    return null
+  } catch (error) {
+    // Solo se cierra la sesión si el servidor la rechaza de verdad. Un fallo de
+    // red o un error temporal no deben obligar a entrar de nuevo.
+    if (error.status >= 400 && error.status < 500) {
+      await chrome.storage.local.remove('session')
+      return null
+    }
+    return session
   }
 }
 
