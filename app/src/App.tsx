@@ -25,27 +25,52 @@ function Progress({ tasks }: { tasks: Task[] }) {
         <span style={{ width: `${(done / tasks.length) * 100}%` }} />
       </div>
       <span className="progress-text">
-        {done}/{tasks.length} hechas
+        {done} de {tasks.length} hechas
       </span>
     </div>
   )
 }
 
-function Stepper(props: { label: string; onPrev: () => void; onNext: () => void; onReset?: () => void; resetLabel: string }) {
+// Número de semana ISO (la semana 1 es la que contiene el primer jueves del año).
+function weekNumber(mondayIso: string) {
+  const thursday = addDays(parseISO(mondayIso), 3)
+  const jan1 = new Date(thursday.getFullYear(), 0, 1)
+  return Math.floor(Math.round((thursday.getTime() - jan1.getTime()) / 86400000) / 7) + 1
+}
+
+const Chevron = ({ d }: { d: string }) => (
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d={d} />
+  </svg>
+)
+
+function Stepper(props: {
+  eyebrow: string
+  label: string
+  onPrev: () => void
+  onNext: () => void
+  onReset?: () => void
+  resetLabel: string
+}) {
   return (
     <div className="stepper">
-      <button className="icon-btn" onClick={props.onPrev} aria-label="Anterior">
-        ‹
-      </button>
-      <h2>{props.label}</h2>
-      <button className="icon-btn" onClick={props.onNext} aria-label="Siguiente">
-        ›
-      </button>
-      {props.onReset && (
-        <button className="chip" onClick={props.onReset}>
-          {props.resetLabel}
+      <div className="stepper-eyebrow">
+        <span>{props.eyebrow}</span>
+        {props.onReset && (
+          <button className="link-btn" onClick={props.onReset}>
+            {props.resetLabel}
+          </button>
+        )}
+      </div>
+      <div className="stepper-row">
+        <h2>{props.label}</h2>
+        <button className="icon-btn round" onClick={props.onPrev} aria-label="Anterior">
+          <Chevron d="M15 5l-7 7 7 7" />
         </button>
-      )}
+        <button className="icon-btn round" onClick={props.onNext} aria-label="Siguiente">
+          <Chevron d="M9 5l7 7-7 7" />
+        </button>
+      </div>
     </div>
   )
 }
@@ -111,11 +136,8 @@ export default function App() {
     <div className="app">
       <header className="top">
         <div className="brand">
-          <img src="/icon.svg" alt="" width="32" height="32" />
-          <div>
-            <h1>Postit Tareas</h1>
-            <p>{formatDay(today, { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-          </div>
+          <img src="/icon.svg" alt="" width="30" height="30" />
+          <h1>Postit Tareas</h1>
         </div>
         <button className="chip" onClick={() => setAccount(true)}>
           {mode === 'local' ? 'Modo local' : 'Cuenta'}
@@ -125,6 +147,7 @@ export default function App() {
       <nav className="tabs" aria-label="Vistas">
         {VIEWS.map(([v, label]) => (
           <button key={v} className={view === v ? 'on' : ''} aria-current={view === v ? 'page' : undefined} onClick={() => setView(v)}>
+            <span className="tab-mark" aria-hidden="true" />
             {label}
           </button>
         ))}
@@ -136,6 +159,7 @@ export default function App() {
         {view === 'day' && (
           <section>
             <Stepper
+              eyebrow={formatDay(day, { weekday: 'long', day: 'numeric', month: 'long' })}
               label={dayLabel}
               onPrev={() => setDay(isoDate(addDays(parseISO(day), -1)))}
               onNext={() => setDay(isoDate(addDays(parseISO(day), 1)))}
@@ -153,6 +177,7 @@ export default function App() {
         {view === 'week' && (
           <section>
             <Stepper
+              eyebrow={`Semana ${weekNumber(week)}`}
               label={weekLabel}
               onPrev={() => setWeek(isoDate(addDays(parseISO(week), -7)))}
               onNext={() => setWeek(isoDate(addDays(parseISO(week), 7)))}
@@ -188,7 +213,12 @@ export default function App() {
         {view === 'later' && (
           <section>
             <div className="stepper">
-              <h2>Más adelante</h2>
+              <div className="stepper-eyebrow">
+                <span>Sin fecha</span>
+              </div>
+              <div className="stepper-row">
+                <h2>Más adelante</h2>
+              </div>
             </div>
             <TaskList tasks={laterTasks} empty="Nada pendiente para más adelante." />
           </section>
