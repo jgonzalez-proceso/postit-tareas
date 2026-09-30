@@ -9,9 +9,13 @@ create table if not exists public.tasks (
   date date,
   done boolean not null default false,
   done_at timestamptz,
+  position double precision,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- Orden manual de las tareas (añadido después de la primera instalación)
+alter table public.tasks add column if not exists position double precision;
 
 create table if not exists public.notes (
   id uuid primary key default gen_random_uuid(),

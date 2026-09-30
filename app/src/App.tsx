@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Account, LoginForm } from './components/Account'
 import { NotesBoard } from './components/NotesBoard'
 import { QuickAdd } from './components/QuickAdd'
-import { isOverdue, TaskList } from './components/TaskList'
+import { isOverdue, PrioritySortButton, TaskList } from './components/TaskList'
 import { addDays, formatDay, isoDate, mondayOf, parseISO, type Scope } from './lib/parse'
 import { clearError, useStore } from './lib/store'
 import type { Task } from './lib/types'
@@ -143,6 +143,9 @@ export default function App() {
               resetLabel="Ir a hoy"
             />
             <Progress tasks={dayTasks} />
+            <div className="list-tools">
+              <PrioritySortButton tasks={dayTasks} />
+            </div>
             <TaskList tasks={dayTasks} empty="Nada apuntado para este día." />
           </section>
         )}

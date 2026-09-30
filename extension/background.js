@@ -248,7 +248,15 @@ const handlers = {
   'notes:goto': ({ note }) => goTo(note),
   'tasks:today': () => store.todayTasks(),
   'tasks:add': ({ title }) =>
-    store.insert('tasks', { title, priority: null, scope: 'day', date: today(), done: false, done_at: null }),
+    store.insert('tasks', {
+      title,
+      priority: null,
+      scope: 'day',
+      date: today(),
+      done: false,
+      done_at: null,
+      position: Date.now(),
+    }),
   'tasks:toggle': ({ id, done }) =>
     store.update('tasks', id, { done, done_at: done ? new Date().toISOString() : null }),
   'auth:status': async () => ({ configured, email: (await getSession())?.email ?? null }),

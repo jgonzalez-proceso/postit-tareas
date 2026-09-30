@@ -387,6 +387,16 @@ code {
   transition: width 0.25s ease;
 }
 
+.list-tools {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.list-tools:empty {
+  display: none;
+}
+
 .progress-text {
   font-size: 0.8rem;
   color: var(--muted);
@@ -461,6 +471,39 @@ code {
 .task-meta {
   display: flex;
   gap: 6px;
+}
+
+.handle {
+  width: 40px;
+  height: 44px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  cursor: grab;
+  touch-action: none;
+  border-radius: 8px;
+}
+
+.handle:hover {
+  background: var(--surface-2);
+}
+
+.tasks.reordering {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.tasks.reordering .handle {
+  cursor: grabbing;
+}
+
+.task.dragging {
+  box-shadow: 0 10px 24px rgb(0 0 0 / 0.22);
+  transform: scale(1.02);
+  border-color: var(--accent);
+  z-index: 1;
+  position: relative;
 }
 
 .badge {

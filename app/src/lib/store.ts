@@ -134,6 +134,7 @@ export function addTask(input: Pick<Task, 'title' | 'priority' | 'scope' | 'date
     ...input,
     done: false,
     done_at: null,
+    position: Date.now(),
     created_at: now,
     updated_at: now,
   }
@@ -149,6 +150,12 @@ export function updateTask(id: string, patch: Partial<Omit<Task, 'id' | 'user_id
   set({ tasks: state.tasks.map((t) => (t.id === id ? { ...t, ...full } : t)) })
   const sb = online()
   if (sb) void push(sb.from('tasks').update(full).eq('id', id))
+}
+
+// Reasigna posiciones a una lista en el orden dado (p. ej. tras ordenar por prioridad).
+export function reorderTasks(ordered: Task[]) {
+  const base = Date.now()
+  ordered.forEach((t, i) => updateTask(t.id, { position: base + i * 1000 }))
 }
 
 export function deleteTask(id: string) {

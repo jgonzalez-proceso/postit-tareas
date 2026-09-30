@@ -12,9 +12,13 @@ export interface Task {
   date: string | null
   done: boolean
   done_at: string | null
+  // Orden manual (arrastrar). Si es null se usa la fecha de creación.
+  position: number | null
   created_at: string
   updated_at: string
 }
+
+export const positionOf = (t: Task) => t.position ?? Date.parse(t.created_at)
 
 export type NoteColor = 'yellow' | 'pink' | 'green' | 'blue' | 'orange'
 export type NoteMatch = 'page' | 'site'
