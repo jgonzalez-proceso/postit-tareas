@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type PointerEvent } from 'react'
+import { useMemo, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
 import { addDays, isoDate, mondayOf, PRIORITY_LABEL, type Priority } from '../lib/parse'
 import { deleteTask, reorderTasks, updateTask } from '../lib/store'
 import { positionOf, type Task } from '../lib/types'
@@ -32,6 +32,14 @@ interface Drag {
   id: string
   from: number
   to: number
+  dy: number
+}
+
+interface Geometry {
+  startY: number
+  mids: number[]
+  height: number
+  shift: number
 }
 
 const moveItem = <T,>(list: T[], from: number, to: number) => {
@@ -50,44 +58,53 @@ export function TaskList({ tasks, empty }: ListProps) {
   const [open, setOpen] = useState<string | null>(null)
   const [drag, setDrag] = useState<Drag | null>(null)
   const listRef = useRef<HTMLUListElement>(null)
+  const geo = useRef<Geometry | null>(null)
   const sorted = useMemo(() => sortTasks(tasks), [tasks])
 
   if (!sorted.length) return empty ? <p className="empty">{empty}</p> : null
 
-  const display = drag ? moveItem(sorted, drag.from, drag.to) : sorted
-
+  // El DOM no se reordena mientras se arrastra (el navegador táctil perdería el gesto):
+  // las filas se desplazan solo con transform.
   function start(e: PointerEvent<HTMLButtonElement>, id: string) {
-    if (e.button !== 0) return
+    if (e.button !== 0 || !listRef.current) return
     e.currentTarget.setPointerCapture(e.pointerId)
     const from = sorted.findIndex((t) => t.id === id)
-    setDrag({ id, from, to: from })
+    const rects = (Array.from(listRef.current.children) as HTMLElement[]).map((el) => el.getBoundingClientRect())
+    const gap = rects.length > 1 ? Math.max(0, rects[1].top - rects[0].bottom) : 0
+    geo.current = {
+      startY: e.clientY,
+      mids: rects.map((r) => r.top + r.height / 2),
+      height: rects[from].height,
+      shift: rects[from].height + gap,
+    }
+    setDrag({ id, from, to: from, dy: 0 })
     setOpen(null)
   }
 
   function move(e: PointerEvent<HTMLButtonElement>) {
-    if (!drag || !listRef.current) return
-    const items = Array.from(listRef.current.children) as HTMLElement[]
+    const g = geo.current
+    if (!drag || !g) return
+    const dy = e.clientY - g.startY
+    const center = g.mids[drag.from] + dy
     const dragged = sorted[drag.from]
     // Solo se reordena dentro del mismo grupo (pendientes o hechas).
-    let to = 0
     let first = -1
     let last = -1
-    display.forEach((t, i) => {
+    let to = 0
+    sorted.forEach((t, i) => {
       if (t.done !== dragged.done) return
       if (first === -1) first = i
       last = i
-      if (t.id === drag.id) return
-      const r = items[i].getBoundingClientRect()
-      if (e.clientY > r.top + r.height / 2) to++
+      if (i !== drag.from && g.mids[i] < center) to++
     })
-    to += first
-    to = Math.max(first, Math.min(last, to))
-    if (to !== drag.to) setDrag({ ...drag, to })
+    to = Math.max(first, Math.min(last, to + first))
+    setDrag({ ...drag, to, dy })
   }
 
   function end() {
     if (!drag) return
     if (drag.to !== drag.from) {
+      const display = moveItem(sorted, drag.from, drag.to)
       const prev = display[drag.to - 1]
       const next = display[drag.to + 1]
       const dragged = sorted[drag.from]
@@ -105,26 +122,40 @@ export function TaskList({ tasks, empty }: ListProps) {
         updateTask(drag.id, { position })
       }
     }
+    geo.current = null
     setDrag(null)
+  }
+
+  const offsetOf = (i: number): number => {
+    if (!drag || !geo.current) return 0
+    if (i === drag.from) return drag.dy
+    if (drag.from < drag.to && i > drag.from && i <= drag.to) return -geo.current.shift
+    if (drag.to < drag.from && i >= drag.to && i < drag.from) return geo.current.shift
+    return 0
   }
 
   return (
     <ul className={`tasks${drag ? ' reordering' : ''}`} ref={listRef}>
-      {display.map((t) => (
-        <TaskRow
-          key={t.id}
-          task={t}
-          open={open === t.id}
-          dragging={drag?.id === t.id}
-          onToggle={() => setOpen(open === t.id ? null : t.id)}
-          handle={{
-            onPointerDown: (e) => start(e, t.id),
-            onPointerMove: move,
-            onPointerUp: end,
-            onPointerCancel: end,
-          }}
-        />
-      ))}
+      {sorted.map((t, i) => {
+        const dy = offsetOf(i)
+        const dragging = drag?.id === t.id
+        return (
+          <TaskRow
+            key={t.id}
+            task={t}
+            open={open === t.id}
+            dragging={dragging}
+            style={dragging ? { transform: `translateY(${dy}px) scale(1.02)` } : dy ? { transform: `translateY(${dy}px)` } : undefined}
+            onToggle={() => setOpen(open === t.id ? null : t.id)}
+            handle={{
+              onPointerDown: (e) => start(e, t.id),
+              onPointerMove: move,
+              onPointerUp: end,
+              onPointerCancel: end,
+            }}
+          />
+        )
+      })}
     </ul>
   )
 }
@@ -133,6 +164,7 @@ interface RowProps {
   task: Task
   open: boolean
   dragging: boolean
+  style?: CSSProperties
   onToggle: () => void
   handle: {
     onPointerDown: (e: PointerEvent<HTMLButtonElement>) => void
@@ -142,14 +174,14 @@ interface RowProps {
   }
 }
 
-function TaskRow({ task, open, dragging, onToggle, handle }: RowProps) {
+function TaskRow({ task, open, dragging, style, onToggle, handle }: RowProps) {
   const now = new Date()
   const today = isoDate(now)
   const monday = isoDate(mondayOf(now))
   const overdue = isOverdue(task, today, monday)
 
   return (
-    <li className={`task${task.done ? ' done' : ''}${open ? ' open' : ''}${dragging ? ' dragging' : ''}`}>
+    <li className={`task${task.done ? ' done' : ''}${open ? ' open' : ''}${dragging ? ' dragging' : ''}`} style={style}>
       <div className="task-main">
         <button
           className="check"
@@ -169,7 +201,7 @@ function TaskRow({ task, open, dragging, onToggle, handle }: RowProps) {
             {overdue && <span className="badge overdue">Atrasada</span>}
           </span>
         </button>
-        <button className="handle" aria-label="Arrastrar para reordenar" title="Arrastrar para reordenar" {...handle}>
+        <button className="handle" onContextMenu={(e) => e.preventDefault()} aria-label="Arrastrar para reordenar" title="Arrastrar para reordenar" {...handle}>
           <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
             <circle cx="9" cy="6" r="1.8" />
             <circle cx="15" cy="6" r="1.8" />

@@ -556,6 +556,9 @@ code {
   cursor: grab;
   touch-action: none;
   border-radius: 8px;
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .handle:hover {
@@ -571,11 +574,14 @@ code {
   cursor: grabbing;
 }
 
+.tasks.reordering .task:not(.dragging) {
+  transition: transform 0.15s ease;
+}
+
 .task.dragging {
   background: var(--surface);
   border-radius: var(--radius);
   box-shadow: 0 10px 24px rgb(0 0 0 / 0.18);
-  transform: scale(1.02);
   z-index: 1;
   position: relative;
 }
